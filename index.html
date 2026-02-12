@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Gra Serce ❤️</title>
+<style>
+body{
+  margin:0;
+  background:#0f0f1a;
+  color:white;
+  font-family:Arial, sans-serif;
+  overflow:hidden;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.screen{
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+}
+
+#puzzleScreen{display:flex;}
+
+h1{margin:10px;}
+
+/* SERCA */
+.heart{
+  position:fixed;
+  top:-40px;
+  font-size:18px;
+  animation:fall linear forwards;
+  z-index:1;
+}
+
+@keyframes fall{
+  from{transform:translateY(-40px);opacity:1;}
+  to{transform:translateY(110vh);opacity:0;}
+}
+
+/* PUZZLE */
+#puzzle{
+  width:400px;
+  height:400px;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  grid-template-rows:repeat(4,1fr);
+  gap:2px;
+  background:white;
+  padding:4px;
+  border-radius:10px;
+}
+
+.piece{
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 85 L15 45 A20 20 0 1 1 50 25 A20 20 0 1 1 85 45 Z' fill='%23ff3366'/></svg>");
+  background-size:400px 400px;
+  cursor:grab;
+}
+
+button{
+  padding:12px 25px;
+  margin-top:15px;
+  border:none;
+  border-radius:20px;
+  background:#ff6fa5;
+  color:white;
+  font-size:16px;
+  cursor:pointer;
+}
+
+button:hover{opacity:0.8;}
+
+#info{
+  font-size:20px;
+  margin:10px;
+}
+
+/* GRA PAMIĘCI */
+#memory{
+  width:320px;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+}
+
+.card{
+  height:70px;
+  background:#333;
+  border-radius:10px;
+  font-size:30px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  cursor:pointer;
+}
+
+.card.open{
+  background:#ff3366;
+}
+</style>
+</head>
+<body>
+
+<!-- MUZYKA -->
+<audio autoplay loop>
+  <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_0e8c86df1f.mp3" type="audio/mpeg">
+</audio>
+
+<!-- PUZZLE -->
+<div id="puzzleScreen" class="screen">
+  <h1>Ułóż serce ❤️ (4x4)</h1>
+  <div id="puzzle"></div>
+</div>
+
+<!-- INFO -->
+<div id="infoScreen" class="screen">
+  <h1>Dobra robota 👍</h1>
+  <p>Ułożyłeś puzzle</p>
+  <button onclick="startMemory()">Przejdź dalej ➜</button>
+</div>
+
+<!-- MEMORY -->
+<div id="memoryScreen" class="screen">
+  <h1>Znajdź pary 🧠</h1>
+  <div id="info">0 / 8</div>
+  <div id="memory"></div>
+</div>
+
+<!-- KONIEC -->
+<div id="finalScreen" class="screen">
+  <h1>Gratulacje 🎉</h1>
+  <p>Przeszedłeś całą grę 😎</p>
+</div>
+
+<script>
+/* EKRANY */
+const puzzleScreen=document.getElementById("puzzleScreen");
+const infoScreen=document.getElementById("infoScreen");
+const memoryScreen=document.getElementById("memoryScreen");
+const finalScreen=document.getElementById("finalScreen");
+
+/* SERCA */
+setInterval(()=>{
+  const h=document.createElement("div");
+  h.className="heart";
+  h.innerText="❤️";
+  h.style.left=Math.random()*100+"vw";
+  h.style.fontSize=14+Math.random()*20+"px";
+  h.style.animationDuration=4+Math.random()*3+"s";
+  document.body.appendChild(h);
+  setTimeout(()=>h.remove(),7000);
+},250);
+
+/* PUZZLE */
+const puzzle=document.getElementById("puzzle");
+let dragged=null;
+const size=16; //4x4
+
+function createPuzzle(){
+  puzzle.innerHTML="";
+
+  for(let i=0;i<size;i++){
+    const p=document.createElement("div");
+    p.className="piece";
+
+    const x=(i%4)*-100;
+    const y=Math.floor(i/4)*-100;
+
+    p.style.backgroundPosition=x+"px "+y+"px";
+    p.dataset.pos=i;
+
+    p.draggable=true;
+
+    p.ondragstart=()=>dragged=p;
+    p.ondragover=e=>e.preventDefault();
+
+    p.ondrop=()=>{
+      if(dragged&&dragged!==p){
+        swap(dragged,p);
+        checkWin();
+      }
+    };
+
+    puzzle.appendChild(p);
+  }
+}
+
+function swap(a,b){
+  const t=a.style.backgroundPosition;
+  const d=a.dataset.pos;
+
+  a.style.backgroundPosition=b.style.backgroundPosition;
+  a.dataset.pos=b.dataset.pos;
+
+  b.style.backgroundPosition=t;
+  b.dataset.pos=d;
+}
+
+function shuffle(){
+  const arr=[...document.querySelectorAll(".piece")];
+  for(let i=0;i<150;i++){
+    const a=Math.floor(Math.random()*arr.length);
+    const b=Math.floor(Math.random()*arr.length);
+    swap(arr[a],arr[b]);
+  }
+}
+
+function checkWin(){
+  const pieces=document.querySelectorAll(".piece");
+  let ok=true;
+
+  pieces.forEach((p,i)=>{
+    if(Number(p.dataset.pos)!==i) ok=false;
+  });
+
+  if(ok){
+    puzzleScreen.style.display="none";
+    infoScreen.style.display="flex";
+  }
+}
+
+/* MEMORY */
+const memory=document.getElementById("memory");
+const info=document.getElementById("info");
+
+let first=null;
+let second=null;
+let lock=false;
+let found=0;
+
+const icons=["❤️","💙","💚","💛","💜","🧡","🤍","💖"];
+
+function startMemory(){
+  infoScreen.style.display="none";
+  memoryScreen.style.display="flex";
+  setupMemory();
+}
+
+function setupMemory(){
+  memory.innerHTML="";
+  found=0;
+  info.innerText="0 / 8";
+
+  let arr=[...icons,...icons];
+  arr.sort(()=>Math.random()-0.5);
+
+  arr.forEach(icon=>{
+    const c=document.createElement("div");
+    c.className="card";
+    c.dataset.icon=icon;
+    c.innerText="?";
+
+    c.onclick=()=>clickCard(c);
+    memory.appendChild(c);
+  });
+}
+
+function clickCard(card){
+  if(lock||card.classList.contains("open")) return;
+
+  card.classList.add("open");
+  card.innerText=card.dataset.icon;
+
+  if(!first){
+    first=card;
+    return;
+  }
+
+  second=card;
+  lock=true;
+
+  if(first.dataset.icon===second.dataset.icon){
+    found++;
+    info.innerText=found+" / 8";
+    resetPick();
+
+    if(found===8){
+      setTimeout(endGame,500);
+    }
+  }else{
+    setTimeout(()=>{
+      first.classList.remove("open");
+      second.classList.remove("open");
+      first.innerText="?";
+      second.innerText="?";
+      resetPick();
+    },800);
+  }
+}
+
+function resetPick(){
+  first=null;
+  second=null;
+  lock=false;
+}
+
+function endGame(){
+  memoryScreen.style.display="none";
+  finalScreen.style.display="flex";
+}
+
+/* START */
+createPuzzle();
+shuffle();
+</script>
+</body>
+</html>
